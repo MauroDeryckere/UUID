@@ -26,10 +26,74 @@
 
 namespace MauUUID
 {
+	static constexpr std::array<uint8_t, 256> CreateHexLUT()
+	{
+		std::array<uint8_t, 256> lut{};
+		for (int i = 0; i < 256; ++i)
+		{
+			// invalid marker
+			lut[i] = 0xFF;
+		}
+		for (char c = '0'; c <= '9'; ++c)
+		{
+			lut[static_cast<uint8_t>(c)] = c - '0';
+		}
+		for (char c = 'a'; c <= 'f'; ++c)
+		{
+			lut[static_cast<uint8_t>(c)] = c - 'a' + 10;
+		}
+		for (char c = 'A'; c <= 'F'; ++c)
+		{
+			lut[static_cast<uint8_t>(c)] = c - 'A' + 10;
+		}
+
+		return lut;
+	}
+
+	static constexpr size_t hexPairs[16][2]
+	{
+	{0,1}, {2,3}, {4,5}, {6,7},
+	{9,10}, {11,12},
+	{14,15}, {16,17},
+	{19,20}, {21,22},
+	{24,25}, {26,27},
+	{28,29}, {30,31},
+	{32,33}, {34,35}
+	};
+
+
+	static constexpr std::array<uint8_t, 256> kHexLUT{ CreateHexLUT() };
+
 	class UUID final
 	{
 	public:
+		UUID() = default;
+
 		constexpr UUID(std::array<uint8_t, 16> const& bytes) noexcept : m_Bytes{ bytes } {}
+
+		static UUID FromStringFast(std::string_view const str)
+		{
+			UUID uuid;
+
+			for (size_t i{ 0 }; i < 16; ++i)
+			{
+				auto [hi, lo] = hexPairs[i];
+				uuid.m_Bytes[i] = (kHexLUT[static_cast<uint8_t>(str[hi])] << 4) | kHexLUT[static_cast<uint8_t>(str[lo])];
+			}
+
+			return uuid;
+		}
+
+		explicit UUID(std::string_view const str)
+		{
+			if (str.size() != 36)
+				throw std::invalid_argument("UUID string must be 36 characters long");
+
+			if (str[8] != '-' || str[13] != '-' || str[18] != '-' || str[23] != '-')
+				throw std::invalid_argument("Invalid UUID format: missing dashes");
+
+			*this = FromStringFast(str);
+		}
 
 #ifdef _WIN32
 		UUID() noexcept
@@ -62,10 +126,10 @@ namespace MauUUID
 		}
 #endif
 		~UUID() = default;
-		UUID(UUID const& other) noexcept = default;
-		UUID(UUID&& other) noexcept = default;
-		UUID& operator=(UUID const& other) noexcept = default;
-		UUID& operator=(UUID&& other) noexcept = default;
+		UUID(UUID const&) noexcept = default;
+		UUID(UUID&&) noexcept = default;
+		UUID& operator=(UUID const&) noexcept = default;
+		UUID& operator=(UUID&&) noexcept = default;
 
 		[[nodiscard]] bool IsNull() const noexcept
 		{

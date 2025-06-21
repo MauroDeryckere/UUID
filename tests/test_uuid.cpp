@@ -98,3 +98,57 @@ TEST_CASE("UUID Null behaves as expected", "[uuid][null]")
     constexpr MauUUID::UUID constexprNull{ MauUUID::null_uuid };
     REQUIRE(nullUUID == constexprNull);
 }
+
+TEST_CASE("UUID FromStringFast parses valid UUID string without validation", "[uuid][parse][fast]")
+{
+    std::string_view constexpr validStr{ "123e4567-e89b-12d3-a456-426614174000" };
+
+    // This should parse without throwing
+    auto const uuid{ MauUUID::UUID::FromStringFast(validStr) };
+
+    char buffer[37]{};
+    uuid.CStr(buffer);
+
+    REQUIRE(std::strcmp(buffer, validStr.data()) == 0);
+}
+
+TEST_CASE("UUID FromStringFast does not validate input (no throws, but output undefined)", "[uuid][parse][fast][unsafe]")
+{
+    std::string_view constexpr invalidStr{ "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz" };
+
+    auto const uuid{ MauUUID::UUID::FromStringFast(invalidStr) };
+
+    char buffer[37]{};
+    uuid.CStr(buffer);
+
+    REQUIRE(std::strlen(buffer) == 36);
+    REQUIRE(std::strcmp(buffer, invalidStr.data()) != 0);
+}
+
+TEST_CASE("UUID constructor and FromStringFast produce identical UUID", "[uuid][parse][consistency]")
+{
+    std::string_view constexpr validStr{ "123e4567-e89b-12d3-a456-426614174000" };
+
+    MauUUID::UUID const uuid1{ validStr };
+    auto const uuid2{ MauUUID::UUID::FromStringFast(validStr) };
+
+    REQUIRE(uuid1 == uuid2);
+}
+
+TEST_CASE("UUID parses from valid string", "[uuid][parse]")
+{
+    std::string const uuidStr{ "123e4567-e89b-12d3-a456-426614174000" };
+    MauUUID::UUID const uuidFromStr{ uuidStr };
+
+    char buffer[37]{};
+    uuidFromStr.CStr(buffer);
+
+    REQUIRE(std::strcmp(buffer, uuidStr.c_str()) == 0);
+    REQUIRE(!uuidFromStr.IsNull());
+}
+
+TEST_CASE("UUID throws or fails on invalid string", "[uuid][parse][error]")
+{
+    std::string_view constexpr invalidStr{ "invalid-uuid-format" };
+	REQUIRE_THROWS_AS(MauUUID::UUID{ invalidStr }, std::invalid_argument);
+}
