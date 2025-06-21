@@ -54,26 +54,58 @@ namespace MauUUID
 
 
 		[[nodiscard]] std::array<uint8_t, 16> const& Data() const noexcept { return m_Bytes; }
+
 		void CStr(std::span<char, 37> buffer) const noexcept
 		{
-			//TODO
-			//std::snprintf(buffer.data(), buffer.size(),
-			//	"%02x%02x%02x%02x-"
-			//	"%02x%02x-"
-			//	"%02x%02x-"
-			//	"%02x%02x-"
-			//	"%02x%02x%02x%02x%02x%02x",
-			//	m_Bytes[0], m_Bytes[1], m_Bytes[2], m_Bytes[3],
-			//	m_Bytes[4], m_Bytes[5],
-			//	m_Bytes[6], m_Bytes[7],
-			//	m_Bytes[8], m_Bytes[9],
-			//	m_Bytes[10], m_Bytes[11], m_Bytes[12], m_Bytes[13], m_Bytes[14], m_Bytes[15]);
+			static constexpr char hex[] = "0123456789abcdef";
+
+			// UUID layout: 8-4-4-4-12 hex digits with dashes
+			// Format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+
+			// bytes indices for each group
+			// Group 1: bytes[0..3]
+			// Group 2: bytes[4..5]
+			// Group 3: bytes[6..7]
+			// Group 4: bytes[8..9]
+			// Group 5: bytes[10..15]
+
+			const uint8_t* b = m_Bytes.data();
+			char* out = buffer.data();
+
+			// Helper to write two hex digits for one byte
+			auto write_byte = [&](uint8_t byte) {
+				*out++ = hex[byte >> 4];
+				*out++ = hex[byte & 0x0F];
+				};
+
+			// Group 1: 4 bytes (8 hex digits)
+			write_byte(b[0]); write_byte(b[1]); write_byte(b[2]); write_byte(b[3]);
+			*out++ = '-';
+
+			// Group 2: 2 bytes (4 hex digits)
+			write_byte(b[4]); write_byte(b[5]);
+			*out++ = '-';
+
+			// Group 3: 2 bytes (4 hex digits)
+			write_byte(b[6]); write_byte(b[7]);
+			*out++ = '-';
+
+			// Group 4: 2 bytes (4 hex digits)
+			write_byte(b[8]); write_byte(b[9]);
+			*out++ = '-';
+
+			// Group 5: 6 bytes (12 hex digits)
+			write_byte(b[10]); write_byte(b[11]); write_byte(b[12]);
+			write_byte(b[13]); write_byte(b[14]); write_byte(b[15]);
+
+			*out = '\0'; // null-terminate
 		}
 
 		[[nodiscard]] std::string Str() const noexcept
 		{
-			//TODO
-			return {};
+			char buffer[37];
+			CStr(std::span{ buffer });
+			return { buffer };
 		}
 
 #pragma region operators

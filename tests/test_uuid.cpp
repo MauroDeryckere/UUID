@@ -1,5 +1,6 @@
 #include <catch2/catch_all.hpp>
 #include "uuid.h"
+#include <iostream>
 
 TEST_CASE("UUID constructor generates non-zero data", "[uuid]")
 {
@@ -26,4 +27,37 @@ TEST_CASE("UUID generates unique values", "[uuid][randomness]")
     std::ranges::sort(uuids);
     auto duplicateIt{ std::ranges::adjacent_find(uuids) };
     REQUIRE(duplicateIt == uuids.end());
+}
+
+TEST_CASE("UUID CStr produces valid null-terminated string of length 36", "[uuid][cstr]")
+{
+    MauUUID::UUID uuid{};
+    char buffer[37]{ };
+    uuid.CStr(buffer);
+
+    // Check null termination
+    REQUIRE(buffer[36] == '\0');
+
+    // Check length (should be 36 before null terminator)
+    size_t const len{ std::strlen(buffer) };
+    REQUIRE(len == 36);
+
+    // Check the format (positions 8, 13, 18, 23 are dashes)
+    REQUIRE(buffer[8] == '-');
+    REQUIRE(buffer[13] == '-');
+    REQUIRE(buffer[18] == '-');
+    REQUIRE(buffer[23] == '-');
+
+    auto isHexDigit{ [](char const c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'); } };
+
+    for (size_t i = 0; i < 36; ++i)
+    {
+        if (i == 8 || i == 13 || i == 18 || i == 23)
+        {
+            continue; // skip dashes
+        }
+        REQUIRE(isHexDigit(buffer[i]));
+    }
+
+    printf("UUID: %s\n", buffer);
 }
