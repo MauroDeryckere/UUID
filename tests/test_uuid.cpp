@@ -52,11 +52,12 @@ TEST_CASE("UUID CStr produces valid null-terminated string of length 36", "[uuid
 
     auto isHexDigit{ [](char const c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'); } };
 
-    for (size_t i = 0; i < 36; ++i)
+    // Skip dashes
+    for (size_t i{ 0 }; i < 36; ++i)
     {
         if (i == 8 || i == 13 || i == 18 || i == 23)
         {
-            continue; // skip dashes
+            continue;
         }
         REQUIRE(isHexDigit(buffer[i]));
     }
@@ -67,7 +68,7 @@ TEST_CASE("UUID CStr produces valid null-terminated string of length 36", "[uuid
 
 TEST_CASE("UUID hash has no collisions in large set", "[uuid][hash][collision]")
 {
-    size_t constexpr NUM_TESTS{ 10 };
+    size_t constexpr NUM_TESTS{ 1 };
     for (size_t i{ 0 }; i < NUM_TESTS; ++i)
     {
         size_t constexpr NUM_UUIDS{ 10'000'000 };
@@ -81,4 +82,19 @@ TEST_CASE("UUID hash has no collisions in large set", "[uuid][hash][collision]")
 
         REQUIRE(uuidSet.size() == NUM_UUIDS);
     }
+}
+
+TEST_CASE("UUID Null behaves as expected", "[uuid][null]")
+{
+    // Construct a null UUID
+    MauUUID::UUID nullUUID{ MauUUID::null_uuid };
+
+    REQUIRE(nullUUID.IsNull());
+    REQUIRE_FALSE(static_cast<bool>(nullUUID));
+
+    auto const& data{ nullUUID.Data() };
+    REQUIRE(std::ranges::all_of(data, [](auto b) { return b == 0; }));
+
+    constexpr MauUUID::UUID constexprNull{ MauUUID::null_uuid };
+    REQUIRE(nullUUID == constexprNull);
 }

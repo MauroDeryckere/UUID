@@ -20,7 +20,7 @@
 #endif
 
 #if !defined(_WIN32) && !defined(__linux__) && !defined(__APPLE__)
-#error Unsupported platform, may be supported if you enable std UUID
+#error Unsupported platform
 #endif
 
 
@@ -29,8 +29,10 @@ namespace MauUUID
 	class UUID final
 	{
 	public:
+		constexpr UUID(std::array<uint8_t, 16> const& bytes) noexcept : m_Bytes{ bytes } {}
+
 #ifdef _WIN32
-		UUID()
+		UUID() noexcept
 		{
 			GUID guid;
 			CoCreateGuid(&guid);
@@ -54,7 +56,7 @@ namespace MauUUID
 #endif
 
 #if defined(__linux__) || defined(__APPLE__)
-		UUID()
+		UUID() noexcept
 		{
 			uuid_generate(m_Bytes.data());
 		}
@@ -65,6 +67,11 @@ namespace MauUUID
 		UUID& operator=(UUID const& other) noexcept = default;
 		UUID& operator=(UUID&& other) noexcept = default;
 
+		[[nodiscard]] bool IsNull() const noexcept
+		{
+			static std::array<uint8_t, 16> constexpr zeroBytes = { 0 };
+			return m_Bytes == zeroBytes;
+		}
 
 		[[nodiscard]] std::array<uint8_t, 16> const& Data() const noexcept { return m_Bytes; }
 
@@ -125,15 +132,25 @@ namespace MauUUID
 			return m_Bytes <=> other.m_Bytes;
 		}
 		[[nodiscard]] bool operator==(UUID const& other) const noexcept = default;
+
+		[[nodiscard]] explicit operator bool() const noexcept
+		{
+			return !IsNull();
+		}
 #pragma endregion
+
 	private:
 		std::array<uint8_t, 16> m_Bytes;
 	};
 
+	constexpr UUID null_uuid{ std::array<uint8_t, 16>{} };
+
+#pragma region operators
 	inline std::ostream& operator<<(std::ostream& os, UUID const& uuid)
 	{
 		return os << uuid.Str();
 	}
+#pragma endregion
 
 	struct UUIDHash final
 	{
