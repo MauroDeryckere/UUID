@@ -25,10 +25,15 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
+    - name: Install dependencies (Ubuntu only)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt update
+        sudo apt install -y uuid-dev
+
     - name: Install Clang (Ubuntu only)
       if: matrix.os == 'ubuntu-latest' && matrix.compiler == 'clang'
       run: |
-        sudo apt update
         sudo apt install -y clang
 
     - name: Configure
