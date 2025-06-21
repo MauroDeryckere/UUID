@@ -66,6 +66,7 @@ namespace MauUUID
 			// Group 1: bytes[0..3]
 			// Group 2: bytes[4..5]
 			// Group 3: bytes[6..7]
+				
 			// Group 4: bytes[8..9]
 			// Group 5: bytes[10..15]
 
@@ -78,27 +79,37 @@ namespace MauUUID
 				*out++ = hex[byte & 0x0F];
 				};
 
-			// Group 1: 4 bytes (8 hex digits)
-			write_byte(b[0]); write_byte(b[1]); write_byte(b[2]); write_byte(b[3]);
+			// Note: Windows stores GUID as little-endian for first 3 fields (RFC wants big-endian)
+			#if defined(_WIN32)
+				write_byte(b[3]); write_byte(b[2]); write_byte(b[1]); write_byte(b[0]); // Data1
+			#else
+				write_byte(b[0]); write_byte(b[1]); write_byte(b[2]); write_byte(b[3]);
+			#endif
 			*out++ = '-';
 
-			// Group 2: 2 bytes (4 hex digits)
-			write_byte(b[4]); write_byte(b[5]);
+			#if defined(_WIN32)
+				write_byte(b[5]); write_byte(b[4]); // Data2
+			#else
+				write_byte(b[4]); write_byte(b[5]);
+			#endif
+			* out++ = '-';
+
+			#if defined(_WIN32)
+				write_byte(b[7]); write_byte(b[6]); // Data3
+			#else
+				write_byte(b[6]); write_byte(b[7]);
+#				endif
 			*out++ = '-';
 
-			// Group 3: 2 bytes (4 hex digits)
-			write_byte(b[6]); write_byte(b[7]);
-			*out++ = '-';
-
-			// Group 4: 2 bytes (4 hex digits)
+			// These are always stored in network order
 			write_byte(b[8]); write_byte(b[9]);
 			*out++ = '-';
 
-			// Group 5: 6 bytes (12 hex digits)
 			write_byte(b[10]); write_byte(b[11]); write_byte(b[12]);
 			write_byte(b[13]); write_byte(b[14]); write_byte(b[15]);
 
-			*out = '\0'; // null-terminate
+			// null-terminate
+			*out = '\0';
 		}
 
 		[[nodiscard]] std::string Str() const noexcept
