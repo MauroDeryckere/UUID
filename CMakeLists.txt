@@ -9,6 +9,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_library(MAU_UUID INTERFACE)
 target_include_directories(MAU_UUID INTERFACE include)
 
+if(WIN32)
+    # Windows - no need to link libuuid
+elseif(UNIX)
+    # Unix-like (Linux/macOS)
+    target_link_libraries(TEST_MAU_UUID PRIVATE uuid)
+endif()
+
 if(MAU_UUID_BUILD_TESTS)
 
 include(FetchContent)
