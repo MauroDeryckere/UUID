@@ -32,10 +32,10 @@ jobs:
         sudo apt install -y clang
 
     - name: Configure
-      run: |
-        cmake -S . -B build \
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          ${{ matrix.compiler == 'clang' && '-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++' || '' }}
+      run: >
+        cmake -S . -B build
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        ${{ matrix.compiler == 'clang' && '-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++' || '' }}
 
     - name: Build
       run: cmake --build build --config ${{ matrix.build_type }}
