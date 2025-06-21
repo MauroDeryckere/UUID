@@ -129,6 +129,48 @@ namespace MauUUID
 	private:
 		std::array<uint8_t, 16> m_Bytes;
 	};
+
+	inline std::ostream& operator<<(std::ostream& os, UUID const& uuid)
+	{
+		return os << uuid.Str();
+	}
+
+	struct UUIDHash final
+	{
+		size_t operator()(const UUID& uuid) const noexcept
+		{
+			auto const& bytes{ uuid.Data() };
+
+			// Simple but decent hash: combine the bytes in chunks of size_t
+			// Assuming size_t is at least 4 bytes; can be 8 on 64-bit
+			size_t result{ 0 };
+
+			size_t constexpr nChunks{ 16 / sizeof(size_t) };
+			for (size_t i{ 0 }; i < nChunks; ++i)
+			{
+				size_t chunk{ 0 };
+				// memcpy chunk bytes into size_t for alignment-safe conversion
+				std::memcpy(&chunk, &bytes[i * sizeof(size_t)], sizeof(size_t));
+				// boost::hash_combine
+				result ^= chunk + 0x9e3779b9 + (result << 6) + (result >> 2);
+			}
+
+			return result;
+		}
+	};
+}
+
+#include <functional>
+namespace std
+{
+	template <>
+	struct hash<MauUUID::UUID>
+	{
+		size_t operator()(const MauUUID::UUID& uuid) const noexcept
+		{
+			return MauUUID::UUIDHash{}(uuid);
+		}
+	};
 }
 
 #endif

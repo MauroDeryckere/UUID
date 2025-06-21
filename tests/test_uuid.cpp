@@ -2,6 +2,8 @@
 #include "uuid.h"
 #include <iostream>
 
+#include <unordered_set>
+
 TEST_CASE("UUID constructor generates non-zero data", "[uuid]")
 {
     MauUUID::UUID uuid{};
@@ -60,4 +62,23 @@ TEST_CASE("UUID CStr produces valid null-terminated string of length 36", "[uuid
     }
 
     printf("UUID: %s\n", buffer);
+    std::cout << "UUID (using operator): " << uuid << "\n";
+}
+
+TEST_CASE("UUID hash has no collisions in large set", "[uuid][hash][collision]")
+{
+    size_t constexpr NUM_TESTS{ 10 };
+    for (size_t i{ 0 }; i < NUM_TESTS; ++i)
+    {
+        size_t constexpr NUM_UUIDS{ 10'000'000 };
+        std::unordered_set<MauUUID::UUID> uuidSet;
+        uuidSet.reserve(NUM_UUIDS);
+
+        for (size_t i{ 0 }; i < NUM_UUIDS; ++i)
+        {
+            uuidSet.emplace();
+        }
+
+        REQUIRE(uuidSet.size() == NUM_UUIDS);
+    }
 }
