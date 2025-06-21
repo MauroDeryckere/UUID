@@ -31,9 +31,7 @@ include(FetchContent)
 
     add_test(NAME UUIDTest COMMAND TEST_MAU_UUID)
 
-    if(WIN32)
-        # Windows - no need to link libuuid
-    elseif(UNIX)
+    if(UNIX AND NOT APPLE)
         # Unix-like (Linux/macOS)
         target_link_libraries(TEST_MAU_UUID PRIVATE uuid)
     endif()
