@@ -36,7 +36,20 @@ namespace MauUUID
 			CoCreateGuid(&guid);
 
 			static_assert(sizeof(GUID) == 16, "GUID size mismatch");
-			memcpy(m_Bytes.data(), &guid, 16);
+
+			// Note: Windows stores GUID as little-endian for first 3 fields (RFC wants big-endian)
+			m_Bytes[0] = static_cast<uint8_t>(guid.Data1 >> 24);
+			m_Bytes[1] = static_cast<uint8_t>(guid.Data1 >> 16);
+			m_Bytes[2] = static_cast<uint8_t>(guid.Data1 >> 8);
+			m_Bytes[3] = static_cast<uint8_t>(guid.Data1);
+
+			m_Bytes[4] = static_cast<uint8_t>(guid.Data2 >> 8);
+			m_Bytes[5] = static_cast<uint8_t>(guid.Data2);
+
+			m_Bytes[6] = static_cast<uint8_t>(guid.Data3 >> 8);
+			m_Bytes[7] = static_cast<uint8_t>(guid.Data3);
+
+			std::memcpy(&m_Bytes[8], guid.Data4, 8);
 		}
 #endif
 
@@ -79,26 +92,13 @@ namespace MauUUID
 				*out++ = hex[byte & 0x0F];
 				};
 
-			// Note: Windows stores GUID as little-endian for first 3 fields (RFC wants big-endian)
-			#if defined(_WIN32)
-				write_byte(b[3]); write_byte(b[2]); write_byte(b[1]); write_byte(b[0]); // Data1
-			#else
-				write_byte(b[0]); write_byte(b[1]); write_byte(b[2]); write_byte(b[3]);
-			#endif
+			write_byte(b[0]); write_byte(b[1]); write_byte(b[2]); write_byte(b[3]);
 			*out++ = '-';
 
-			#if defined(_WIN32)
-				write_byte(b[5]); write_byte(b[4]); // Data2
-			#else
-				write_byte(b[4]); write_byte(b[5]);
-			#endif
+			write_byte(b[4]); write_byte(b[5]);
 			* out++ = '-';
 
-			#if defined(_WIN32)
-				write_byte(b[7]); write_byte(b[6]); // Data3
-			#else
-				write_byte(b[6]); write_byte(b[7]);
-#				endif
+			write_byte(b[6]); write_byte(b[7]);
 			*out++ = '-';
 
 			// These are always stored in network order
