@@ -1,6 +1,16 @@
 cmake_minimum_required(VERSION 3.15)
 project(MAU_UUID VERSION 0.1 LANGUAGES CXX)
 
+include(FetchContent)
+
+FetchContent_Declare(
+  catch2
+  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+  GIT_TAG v3.4.0
+)
+
+FetchContent_MakeAvailable(catch2)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -12,6 +22,10 @@ enable_testing()
 
 # Add test executable
 add_executable(TEST_MAU_UUID tests/test_uuid.cpp)
-target_link_libraries(TEST_MAU_UUID PRIVATE MAU_UUID)
+target_link_libraries(TEST_MAU_UUID PRIVATE MAU_UUID Catch2::Catch2WithMain)
+include(CTest)
+include(Catch)
+catch_discover_tests(TEST_MAU_UUID)
+
 
 add_test(NAME UUIDTest COMMAND TEST_MAU_UUID)
