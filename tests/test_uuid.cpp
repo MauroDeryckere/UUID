@@ -97,6 +97,7 @@ TEST_CASE("UUID Null behaves as expected", "[uuid][null]")
 
     constexpr MauUUID::UUID constexprNull{ MauUUID::null_uuid };
     REQUIRE(nullUUID == constexprNull);
+    REQUIRE_FALSE(nullUUID != nullUUID);
 }
 
 TEST_CASE("UUID FromStringFast parses valid UUID string without validation", "[uuid][parse][fast]")

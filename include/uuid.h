@@ -23,6 +23,9 @@
 #error Unsupported platform
 #endif
 
+//TODO custom exceptions
+//TODO  "lenient from string"
+//TODO binary conversions
 
 namespace MauUUID
 {
@@ -147,7 +150,7 @@ namespace MauUUID
 
 		[[nodiscard]] bool IsNull() const noexcept
 		{
-			static std::array<uint8_t, 16> constexpr zeroBytes = { 0 };
+			static std::array<uint8_t, 16> constexpr zeroBytes{ 0 };
 			return m_Bytes == zeroBytes;
 		}
 
@@ -209,7 +212,7 @@ namespace MauUUID
 		{
 			return m_Bytes <=> other.m_Bytes;
 		}
-		[[nodiscard]] bool operator==(UUID const& other) const noexcept = default;
+		[[nodiscard]] bool operator==(UUID const&) const noexcept = default;
 
 		[[nodiscard]] explicit operator bool() const noexcept
 		{
@@ -248,7 +251,7 @@ namespace MauUUID
 
 #pragma endregion
 
-	struct UUIDHash final
+	struct UUIDHashChunks final
 	{
 		size_t operator()(const UUID& uuid) const noexcept
 		{
@@ -259,6 +262,8 @@ namespace MauUUID
 			size_t result{ 0 };
 
 			size_t constexpr nChunks{ 16 / sizeof(size_t) };
+			static_assert(16 % sizeof(size_t) == 0);
+
 			for (size_t i{ 0 }; i < nChunks; ++i)
 			{
 				size_t chunk{ 0 };
@@ -266,6 +271,20 @@ namespace MauUUID
 				std::memcpy(&chunk, &bytes[i * sizeof(size_t)], sizeof(size_t));
 				// boost::hash_combine
 				result ^= chunk + 0x9e3779b9 + (result << 6) + (result >> 2);
+			}
+
+			return result;
+		}
+	};
+	struct UUIDHashBytePerByte final
+	{
+		size_t operator()(const UUID& uuid) const noexcept
+		{
+			auto const& bytes{ uuid.Data() };
+			size_t result{ 0 };
+			for (size_t i{ 0 }; i < bytes.size(); ++i)
+			{
+				result ^= static_cast<size_t>(bytes[i]) + 0x9e3779b9 + (result << 6) + (result >> 2);
 			}
 
 			return result;
@@ -281,7 +300,7 @@ namespace std
 	{
 		size_t operator()(const MauUUID::UUID& uuid) const noexcept
 		{
-			return MauUUID::UUIDHash{}(uuid);
+			return MauUUID::UUIDHashChunks{}(uuid);
 		}
 	};
 }
