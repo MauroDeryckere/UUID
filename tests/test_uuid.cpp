@@ -236,3 +236,19 @@ TEST_CASE("UUID construction from uint8, uint32, and uint64 arrays produces iden
     REQUIRE(uuid32.Data() == bytes8);
     REQUIRE(uuid64.Data() == bytes8);
 }
+
+TEST_CASE("UUID FromStringLenient", "[uuid][construction]")
+{
+    constexpr char const* uuid_str_compact = "123e4567e89b12d3a456426614174000";
+    constexpr char const* uuid_str_hyphens{ "123e4567-e89b-12d3-a456-426614174000" };
+    constexpr char const* uuid_str_clean = "123e4567-e89b-12d3-a456-426614174000";
+    constexpr char const* uuid_str_upper{ "123E4567-E89B-12D3-A456-426614174000" };
+    constexpr char const* uuid_str_spaces{ " 123e4567-e89b-12d3-a456-426614174000 " };
+
+    MauUUID::UUID uuid_base{ uuid_str_clean };
+
+    REQUIRE(uuid_base == MauUUID::UUID::FromStringLenient(uuid_str_hyphens));
+    REQUIRE(uuid_base == MauUUID::UUID::FromStringLenient(uuid_str_compact));
+    REQUIRE(uuid_base == MauUUID::UUID::FromStringLenient(uuid_str_upper));
+    REQUIRE(uuid_base == MauUUID::UUID::FromStringLenient(uuid_str_spaces));
+}

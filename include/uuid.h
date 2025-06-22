@@ -23,9 +23,6 @@
 #error Unsupported platform
 #endif
 
-//TODO  "lenient from string"
-//TODO binary conversions
-
 namespace MauUUID
 {
 	static std::array<uint8_t, 256> constexpr CreateHexLUT()
@@ -202,6 +199,31 @@ namespace MauUUID
 
 			return uuid;
 		}
+
+		[[nodiscard]] static UUID FromStringLenient(std::string_view const str) noexcept
+		{
+			assert(IsValidStringLenient(str));
+
+			std::string cleaned;
+			cleaned.reserve(32);
+
+			for (char const c : str)
+			{
+				if (c == '{' || c == '}' || c == '-' || c == ' ') continue;
+				cleaned.push_back(c);
+			}
+
+			UUID uuid;
+			for (size_t i{ 0 }; i < 16; ++i)
+			{
+				uint8_t const hi{ HEX_LUT[static_cast<uint8_t>(cleaned[i * 2])] };
+				uint8_t const lo{ HEX_LUT[static_cast<uint8_t>(cleaned[i * 2 + 1])] };
+				uuid.m_Bytes[i] = (hi << 4) | lo;
+			}
+
+			return uuid;
+		}
+
 		[[nodiscard]] static bool TryParse(std::string_view const str, UUID& out) noexcept
 		{
 			if (!IsValidString(str))
@@ -212,10 +234,20 @@ namespace MauUUID
 			return true;
 		}
 
+		[[nodiscard]] static bool TryParseLenient(std::string_view const str, UUID& out) noexcept
+		{
+			if (!IsValidStringLenient(str))
+			{
+				return false;
+			}
+
+			out = FromStringLenient(str);
+			return true;
+		}
+
 		[[nodiscard]] static bool IsValidString(std::string_view const str) noexcept
 		{
-			if (str.size() != 36) return false;
-			if (str[8] != '-' || str[13] != '-' || str[18] != '-' || str[23] != '-') return false;
+			if (str.size() != 36 || str[8] != '-' || str[13] != '-' || str[18] != '-' || str[23] != '-') return false;
 
 			for (size_t i{ 0 }; i < 36; ++i)
 			{
@@ -223,6 +255,19 @@ namespace MauUUID
 				if (MauUUID::HEX_LUT[static_cast<uint8_t>(str[i])] == 0xFF) return false;
 			}
 			return true;
+		}
+
+		[[nodiscard]] static bool IsValidStringLenient(std::string_view const str) noexcept
+		{
+			std::size_t count{ 0 };
+			for (char const c : str)
+			{
+				if (c == '{' || c == '}' || c == '-' || c == ' ') continue;
+				if (HEX_LUT[static_cast<uint8_t>(c)] == 0xFF) return false;
+
+				++count;
+			}
+			return count == 32;
 		}
 #pragma endregion
 #pragma region operators
