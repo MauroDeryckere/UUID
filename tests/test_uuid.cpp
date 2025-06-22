@@ -169,3 +169,43 @@ TEST_CASE("UUID Is valid string", "[uuid][parse]")
     REQUIRE(MauUUID::UUID::IsValidUUIDString("123e4567-e89b-12d3-a456_426655440000") == false); // invalid dash replaced with underscore
     REQUIRE(MauUUID::UUID::IsValidUUIDString("") == false); // empty string
 }
+
+TEST_CASE("UUID extraction operator >> works correctly", "[uuid][stream]")
+{
+    using namespace MauUUID;
+
+
+    SECTION("Extract valid UUID string")
+    {
+        std::istringstream iss("123e4567-e89b-12d3-a456-426655440000");
+        MauUUID::UUID uuid;
+        iss >> uuid;
+        REQUIRE(iss);
+        REQUIRE(uuid.Str() == "123e4567-e89b-12d3-a456-426655440000");
+    }
+
+    SECTION("Extract invalid UUID string causes stream failure")
+    {
+        std::istringstream iss("invalid-uuid-string-0000000000000000");
+        MauUUID::UUID uuid;
+        iss >> uuid;
+        REQUIRE(!iss); // stream should be in fail state
+    }
+
+    SECTION("Extract empty string causes stream failure")
+    {
+        std::istringstream iss("");
+        MauUUID::UUID uuid;
+        iss >> uuid;
+        REQUIRE(!iss);
+    }
+
+    SECTION("Extract UUID string with surrounding whitespace")
+    {
+        std::istringstream iss("  123e4567-e89b-12d3-a456-426655440000  ");
+        MauUUID::UUID uuid;
+        iss >> uuid;
+        REQUIRE(iss);
+        REQUIRE(uuid.Str() == "123e4567-e89b-12d3-a456-426655440000");
+    }
+}

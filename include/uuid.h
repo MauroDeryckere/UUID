@@ -29,20 +29,17 @@ namespace MauUUID
 	static constexpr std::array<uint8_t, 256> CreateHexLUT()
 	{
 		std::array<uint8_t, 256> lut{};
-		for (int i = 0; i < 256; ++i)
-		{
-			// invalid marker
-			lut[i] = 0xFF;
-		}
-		for (char c = '0'; c <= '9'; ++c)
+		lut.fill(0xFF);
+
+		for (char c{ '0' }; c <= '9'; ++c)
 		{
 			lut[static_cast<uint8_t>(c)] = c - '0';
 		}
-		for (char c = 'a'; c <= 'f'; ++c)
+		for (char c{ 'a' }; c <= 'f'; ++c)
 		{
 			lut[static_cast<uint8_t>(c)] = c - 'a' + 10;
 		}
-		for (char c = 'A'; c <= 'F'; ++c)
+		for (char c{ 'A' }; c <= 'F'; ++c)
 		{
 			lut[static_cast<uint8_t>(c)] = c - 'A' + 10;
 		}
@@ -110,7 +107,13 @@ namespace MauUUID
 		UUID() noexcept
 		{
 			GUID guid;
-			CoCreateGuid(&guid);
+
+			#ifdef _DEBUG
+				auto const result{ CoCreateGuid(&guid) };
+				assert(result == SEC_E_OK);
+			#else
+				CoCreateGuid(&guid)
+			#endif
 
 			static_assert(sizeof(GUID) == 16, "GUID size mismatch");
 
@@ -225,6 +228,24 @@ namespace MauUUID
 	{
 		return os << uuid.Str();
 	}
+	inline std::istream& operator>>(std::istream& is, MauUUID::UUID& uuid)
+	{
+		std::string str;
+		// read whitespace-delimited token from stream
+		is >> str;
+
+		try
+		{
+			uuid = UUID{ str };
+		}
+		catch (...)
+		{
+			is.setstate(std::ios::failbit);
+		}
+
+		return is;
+	}
+
 #pragma endregion
 
 	struct UUIDHash final
