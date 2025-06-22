@@ -8,6 +8,7 @@
 #include <compare>
 
 #ifdef _WIN32
+#define NOMINMAX
 #include <objbase.h>
 #endif
 
