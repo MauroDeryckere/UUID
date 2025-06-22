@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(MAU_UUI)
+project(MAU_UUID)
 
 option(MAU_UUID_BUILD_TESTS "Build tests for MAU_UUID" ON)
 
