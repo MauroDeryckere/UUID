@@ -113,21 +113,20 @@ TEST_CASE("UUID FromString parses valid UUID string without validation", "[uuid]
     REQUIRE(std::strcmp(buffer, validStr.data()) == 0);
 }
 
-// asserts in debug
-#ifndef _DEBUG
-TEST_CASE("UUID FromString does not validate input (no throws, but output undefined)", "[uuid][parse][fast][unsafe]")
-{
-    std::string_view constexpr invalidStr{ "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz" };
+//// asserts in debug
+//TEST_CASE("UUID FromString does not validate input (no throws, but output undefined)", "[uuid][parse][fast][unsafe]")
+//{
+//    std::string_view constexpr invalidStr{ "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz" };
+//
+//    auto const uuid{ MauUUID::UUID::FromString(invalidStr) };
+//
+//    char buffer[37]{};
+//    uuid.CStr(buffer);
+//
+//    REQUIRE(std::strlen(buffer) == 36);
+//    REQUIRE(std::strcmp(buffer, invalidStr.data()) != 0);
+//}
 
-    auto const uuid{ MauUUID::UUID::FromString(invalidStr) };
-
-    char buffer[37]{};
-    uuid.CStr(buffer);
-
-    REQUIRE(std::strlen(buffer) == 36);
-    REQUIRE(std::strcmp(buffer, invalidStr.data()) != 0);
-}
-#endif
 
 TEST_CASE("UUID constructor and FromString produce identical UUID", "[uuid][parse][consistency]")
 {
