@@ -112,7 +112,7 @@ namespace MauUUID
 				auto const result{ CoCreateGuid(&guid) };
 				assert(result == SEC_E_OK);
 			#else
-				CoCreateGuid(&guid)
+			CoCreateGuid(&guid);
 			#endif
 
 			static_assert(sizeof(GUID) == 16, "GUID size mismatch");
