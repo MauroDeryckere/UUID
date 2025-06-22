@@ -113,6 +113,8 @@ TEST_CASE("UUID FromString parses valid UUID string without validation", "[uuid]
     REQUIRE(std::strcmp(buffer, validStr.data()) == 0);
 }
 
+// asserts in debug
+#ifndef _DEBUG
 TEST_CASE("UUID FromString does not validate input (no throws, but output undefined)", "[uuid][parse][fast][unsafe]")
 {
     std::string_view constexpr invalidStr{ "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz" };
@@ -125,6 +127,7 @@ TEST_CASE("UUID FromString does not validate input (no throws, but output undefi
     REQUIRE(std::strlen(buffer) == 36);
     REQUIRE(std::strcmp(buffer, invalidStr.data()) != 0);
 }
+#endif
 
 TEST_CASE("UUID constructor and FromString produce identical UUID", "[uuid][parse][consistency]")
 {
@@ -203,4 +206,34 @@ TEST_CASE("UUID extraction operator >> works correctly", "[uuid][stream]")
         REQUIRE(iss);
         REQUIRE(uuid.Str() == "123e4567-e89b-12d3-a456-426655440000");
     }
+}
+
+TEST_CASE("UUID construction from uint8, uint32, and uint64 arrays produces identical data", "[uuid][construction]")
+{
+    std::array<uint8_t, 16> constexpr bytes8
+    {
+        0x01, 0x23, 0x45, 0x67,
+        0x89, 0xab,
+        0xcd, 0xef,
+        0x01, 0x23,
+        0x45, 0x67, 0x89, 0xab, 0xcd, 0xef
+    };
+
+    std::array<uint32_t, 4> bytes32;
+    std::memcpy(bytes32.data(), bytes8.data(), bytes8.size());
+
+    std::array<uint64_t, 2> bytes64;
+    std::memcpy(bytes64.data(), bytes8.data(), bytes8.size());
+
+    MauUUID::UUID const uuid8{ bytes8 };
+    MauUUID::UUID const uuid32{ bytes32 };
+    MauUUID::UUID const uuid64{ bytes64 };
+
+    REQUIRE(uuid8.Data() == uuid32.Data());
+    REQUIRE(uuid8.Data() == uuid64.Data());
+
+    REQUIRE(uuid8.Data32() == bytes32);
+    REQUIRE(uuid8.Data64() == bytes64);
+    REQUIRE(uuid32.Data() == bytes8);
+    REQUIRE(uuid64.Data() == bytes8);
 }

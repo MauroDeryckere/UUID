@@ -67,6 +67,9 @@ namespace MauUUID
 	{
 	public:
 		constexpr explicit UUID(std::array<uint8_t, 16> const& bytes) noexcept : m_Bytes{ bytes } { }
+		explicit UUID(std::array<uint32_t, 4> const& data32) noexcept { std::memcpy(m_Bytes.data(), data32.data(), sizeof(m_Bytes)); }
+		explicit UUID(std::array<uint64_t, 2> const& data64) noexcept { std::memcpy(m_Bytes.data(), data64.data(), sizeof(m_Bytes)); }
+
 		explicit UUID(std::string_view const str) { *this = FromString(str); }
 
 #ifdef _WIN32
@@ -119,6 +122,18 @@ namespace MauUUID
 		}
 
 		[[nodiscard]] std::array<uint8_t, 16> const& Data() const noexcept { return m_Bytes; }
+		[[nodiscard]] std::array<uint32_t, 4> Data32() const noexcept
+		{
+			std::array<uint32_t, 4> result{};
+			std::memcpy(result.data(), m_Bytes.data(), sizeof(m_Bytes));
+			return result;
+		}
+		[[nodiscard]] std::array<uint64_t, 2> Data64() const noexcept
+		{
+			std::array<uint64_t, 2> result{};
+			std::memcpy(result.data(), m_Bytes.data(), sizeof(m_Bytes));
+			return result;
+		}
 
 #pragma region Strings
 		void CStr(std::span<char, 37> buffer) const noexcept
@@ -240,11 +255,7 @@ namespace MauUUID
 		// read whitespace-delimited token from stream
 		is >> str;
 
-		try
-		{
-			uuid = UUID{ str };
-		}
-		catch (...)
+		if (not UUID::TryParse(str, uuid))
 		{
 			is.setstate(std::ios::failbit);
 		}
