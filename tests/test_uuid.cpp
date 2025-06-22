@@ -100,12 +100,12 @@ TEST_CASE("UUID Null behaves as expected", "[uuid][null]")
     REQUIRE_FALSE(nullUUID != nullUUID);
 }
 
-TEST_CASE("UUID FromStringFast parses valid UUID string without validation", "[uuid][parse][fast]")
+TEST_CASE("UUID FromString parses valid UUID string without validation", "[uuid][parse][fast]")
 {
     std::string_view constexpr validStr{ "123e4567-e89b-12d3-a456-426614174000" };
 
     // This should parse without throwing
-    auto const uuid{ MauUUID::UUID::FromStringFast(validStr) };
+    auto const uuid{ MauUUID::UUID::FromString(validStr) };
 
     char buffer[37]{};
     uuid.CStr(buffer);
@@ -113,11 +113,11 @@ TEST_CASE("UUID FromStringFast parses valid UUID string without validation", "[u
     REQUIRE(std::strcmp(buffer, validStr.data()) == 0);
 }
 
-TEST_CASE("UUID FromStringFast does not validate input (no throws, but output undefined)", "[uuid][parse][fast][unsafe]")
+TEST_CASE("UUID FromString does not validate input (no throws, but output undefined)", "[uuid][parse][fast][unsafe]")
 {
     std::string_view constexpr invalidStr{ "zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz" };
 
-    auto const uuid{ MauUUID::UUID::FromStringFast(invalidStr) };
+    auto const uuid{ MauUUID::UUID::FromString(invalidStr) };
 
     char buffer[37]{};
     uuid.CStr(buffer);
@@ -126,12 +126,12 @@ TEST_CASE("UUID FromStringFast does not validate input (no throws, but output un
     REQUIRE(std::strcmp(buffer, invalidStr.data()) != 0);
 }
 
-TEST_CASE("UUID constructor and FromStringFast produce identical UUID", "[uuid][parse][consistency]")
+TEST_CASE("UUID constructor and FromString produce identical UUID", "[uuid][parse][consistency]")
 {
     std::string_view constexpr validStr{ "123e4567-e89b-12d3-a456-426614174000" };
 
     MauUUID::UUID const uuid1{ validStr };
-    auto const uuid2{ MauUUID::UUID::FromStringFast(validStr) };
+    auto const uuid2{ MauUUID::UUID::FromString(validStr) };
 
     REQUIRE(uuid1 == uuid2);
 }
@@ -148,27 +148,21 @@ TEST_CASE("UUID parses from valid string", "[uuid][parse]")
     REQUIRE(!uuidFromStr.IsNull());
 }
 
-TEST_CASE("UUID throws or fails on invalid string", "[uuid][parse][error]")
-{
-    std::string_view constexpr invalidStr{ "invalid-uuid-format" };
-	REQUIRE_THROWS_AS(MauUUID::UUID{ invalidStr }, std::invalid_argument);
-}
-
 TEST_CASE("UUID Is valid string", "[uuid][parse]")
 {
     using namespace MauUUID;
-    REQUIRE(MauUUID::UUID::IsValidUUIDString("123e4567-e89b-12d3-a456-426655440000") == true);
-    REQUIRE(MauUUID::UUID::IsValidUUIDString("00000000-0000-0000-0000-000000000000") == true);
-    REQUIRE(MauUUID:: UUID::IsValidUUIDString("ffffffff-ffff-ffff-ffff-ffffffffffff") == true);
-    REQUIRE(MauUUID::UUID::IsValidUUIDString("A1234567-E89B-12D3-A456-426655440000") == true); // uppercase hex
+    REQUIRE(MauUUID::UUID::IsValidString("123e4567-e89b-12d3-a456-426655440000") == true);
+    REQUIRE(MauUUID::UUID::IsValidString("00000000-0000-0000-0000-000000000000") == true);
+    REQUIRE(MauUUID:: UUID::IsValidString("ffffffff-ffff-ffff-ffff-ffffffffffff") == true);
+    REQUIRE(MauUUID::UUID::IsValidString("A1234567-E89B-12D3-A456-426655440000") == true); // uppercase hex
 
     // Invalid UUIDs
-    REQUIRE(MauUUID::UUID::IsValidUUIDString("123e4567e89b12d3a456426655440000") == false); // missing dashes
-    REQUIRE(MauUUID::UUID::IsValidUUIDString("123e4567-e89b-12d3-a456-42665544") == false); // too short
-    REQUIRE(MauUUID::UUID::IsValidUUIDString("123e4567-e89b-12d3-a456-42665544000000") == false); // too long
-    REQUIRE(MauUUID::UUID::IsValidUUIDString("123e4567-e89b-12d3-a456-42665544ZZZZ") == false); // invalid chars
-    REQUIRE(MauUUID::UUID::IsValidUUIDString("123e4567-e89b-12d3-a456_426655440000") == false); // invalid dash replaced with underscore
-    REQUIRE(MauUUID::UUID::IsValidUUIDString("") == false); // empty string
+    REQUIRE(MauUUID::UUID::IsValidString("123e4567e89b12d3a456426655440000") == false); // missing dashes
+    REQUIRE(MauUUID::UUID::IsValidString("123e4567-e89b-12d3-a456-42665544") == false); // too short
+    REQUIRE(MauUUID::UUID::IsValidString("123e4567-e89b-12d3-a456-42665544000000") == false); // too long
+    REQUIRE(MauUUID::UUID::IsValidString("123e4567-e89b-12d3-a456-42665544ZZZZ") == false); // invalid chars
+    REQUIRE(MauUUID::UUID::IsValidString("123e4567-e89b-12d3-a456_426655440000") == false); // invalid dash replaced with underscore
+    REQUIRE(MauUUID::UUID::IsValidString("") == false); // empty string
 }
 
 TEST_CASE("UUID extraction operator >> works correctly", "[uuid][stream]")

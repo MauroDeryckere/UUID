@@ -23,13 +23,12 @@
 #error Unsupported platform
 #endif
 
-//TODO custom exceptions
 //TODO  "lenient from string"
 //TODO binary conversions
 
 namespace MauUUID
 {
-	static constexpr std::array<uint8_t, 256> CreateHexLUT()
+	static std::array<uint8_t, 256> constexpr CreateHexLUT()
 	{
 		std::array<uint8_t, 256> lut{};
 		lut.fill(0xFF);
@@ -50,7 +49,7 @@ namespace MauUUID
 		return lut;
 	}
 
-	static constexpr size_t hexPairs[16][2]
+	static size_t constexpr HEX_PAIRS[16][2]
 	{
 	{0,1}, {2,3}, {4,5}, {6,7},
 	{9,10}, {11,12},
@@ -62,49 +61,13 @@ namespace MauUUID
 	};
 
 
-	static constexpr std::array<uint8_t, 256> kHexLUT{ CreateHexLUT() };
+	static constexpr std::array<uint8_t, 256> HEX_LUT{ CreateHexLUT() };
 
 	class UUID final
 	{
 	public:
-		constexpr UUID(std::array<uint8_t, 16> const& bytes) noexcept : m_Bytes{ bytes } {}
-
-		static UUID FromStringFast(std::string_view const str)
-		{
-			UUID uuid;
-
-			for (size_t i{ 0 }; i < 16; ++i)
-			{
-				auto [hi, lo] = hexPairs[i];
-				uuid.m_Bytes[i] = (kHexLUT[static_cast<uint8_t>(str[hi])] << 4) | kHexLUT[static_cast<uint8_t>(str[lo])];
-			}
-
-			return uuid;
-		}
-
-		[[nodiscard]] static bool IsValidUUIDString(std::string_view const str) noexcept
-		{
-			if (str.size() != 36) return false;
-			if (str[8] != '-' || str[13] != '-' || str[18] != '-' || str[23] != '-') return false;
-
-			for (size_t i{ 0 }; i < 36; ++i)
-			{
-				if (i == 8 || i == 13 || i == 18 || i == 23) continue;
-				if (MauUUID::kHexLUT[static_cast<uint8_t>(str[i])] == 0xFF) return false;
-			}
-			return true;
-		}
-
-		explicit UUID(std::string_view const str)
-		{
-			if (str.size() != 36)
-				throw std::invalid_argument("UUID string must be 36 characters long");
-
-			if (str[8] != '-' || str[13] != '-' || str[18] != '-' || str[23] != '-')
-				throw std::invalid_argument("Invalid UUID format: missing dashes");
-
-			*this = FromStringFast(str);
-		}
+		constexpr explicit UUID(std::array<uint8_t, 16> const& bytes) noexcept : m_Bytes{ bytes } { }
+		explicit UUID(std::string_view const str) { *this = FromString(str); }
 
 #ifdef _WIN32
 		UUID() noexcept
@@ -115,7 +78,7 @@ namespace MauUUID
 				auto const result{ CoCreateGuid(&guid) };
 				assert(result == SEC_E_OK);
 			#else
-			CoCreateGuid(&guid);
+				CoCreateGuid(&guid);
 			#endif
 
 			static_assert(sizeof(GUID) == 16, "GUID size mismatch");
@@ -142,6 +105,7 @@ namespace MauUUID
 			uuid_generate(m_Bytes.data());
 		}
 #endif
+
 		~UUID() = default;
 		UUID(UUID const&) noexcept = default;
 		UUID(UUID&&) noexcept = default;
@@ -156,9 +120,10 @@ namespace MauUUID
 
 		[[nodiscard]] std::array<uint8_t, 16> const& Data() const noexcept { return m_Bytes; }
 
+#pragma region Strings
 		void CStr(std::span<char, 37> buffer) const noexcept
 		{
-			static constexpr char hex[] = "0123456789abcdef";
+			static char constexpr hex[]{ "0123456789abcdef" };
 
 			// UUID layout: 8-4-4-4-12 hex digits with dashes
 			// Format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
@@ -171,14 +136,15 @@ namespace MauUUID
 			// Group 4: bytes[8..9]
 			// Group 5: bytes[10..15]
 
-			const uint8_t* b = m_Bytes.data();
-			char* out = buffer.data();
+			uint8_t const* b{ m_Bytes.data() };
+			char* out{ buffer.data() };
 
 			// Helper to write two hex digits for one byte
-			auto write_byte = [&](uint8_t byte) {
-				*out++ = hex[byte >> 4];
-				*out++ = hex[byte & 0x0F];
-				};
+			auto const write_byte{ [&](uint8_t const byte)
+				{
+					*out++ = hex[byte >> 4];
+					*out++ = hex[byte & 0x0F];
+				} };
 
 			write_byte(b[0]); write_byte(b[1]); write_byte(b[2]); write_byte(b[3]);
 			*out++ = '-';
@@ -207,6 +173,43 @@ namespace MauUUID
 			return { buffer };
 		}
 
+		[[nodiscard]] static UUID FromString(std::string_view const str) noexcept
+		{
+			assert(IsValidString(str) && "Invalid UUID format!");
+
+			UUID uuid;
+
+			for (size_t i{ 0 }; i < 16; ++i)
+			{
+				auto [hi, lo] = HEX_PAIRS[i];
+				uuid.m_Bytes[i] = (HEX_LUT[static_cast<uint8_t>(str[hi])] << 4) | HEX_LUT[static_cast<uint8_t>(str[lo])];
+			}
+
+			return uuid;
+		}
+		[[nodiscard]] static bool TryParse(std::string_view const str, UUID& out) noexcept
+		{
+			if (!IsValidString(str))
+			{
+				return false;
+			}
+			out = FromString(str);
+			return true;
+		}
+
+		[[nodiscard]] static bool IsValidString(std::string_view const str) noexcept
+		{
+			if (str.size() != 36) return false;
+			if (str[8] != '-' || str[13] != '-' || str[18] != '-' || str[23] != '-') return false;
+
+			for (size_t i{ 0 }; i < 36; ++i)
+			{
+				if (i == 8 || i == 13 || i == 18 || i == 23) continue;
+				if (MauUUID::HEX_LUT[static_cast<uint8_t>(str[i])] == 0xFF) return false;
+			}
+			return true;
+		}
+#pragma endregion
 #pragma region operators
 		[[nodiscard]] auto operator<=>(UUID const& other) const noexcept
 		{
