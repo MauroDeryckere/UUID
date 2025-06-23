@@ -58,19 +58,38 @@ namespace MauUUID
 	{32,33}, {34,35}
 	};
 
-
 	static constexpr std::array<uint8_t, 256> HEX_LUT{ CreateHexLUT() };
 
 	class UUID final
 	{
 	public:
+		/**
+		 * @brief Initialize a UUID with bytes.
+		 * @param bytes Bytes to initialize the UUID with.
+		 */
 		constexpr explicit UUID(std::array<uint8_t, 16> const& bytes) noexcept : m_Bytes{ bytes } { }
+		/**
+		 * @brief Initialize a UUID with bytes (32 bit variation).
+		 * @param bytes Bytes to initialize the UUID with.
+		 */
 		explicit UUID(std::array<uint32_t, 4> const& data32) noexcept { std::memcpy(m_Bytes.data(), data32.data(), sizeof(m_Bytes)); }
+		/**
+		 * @brief Initialize a UUID with bytes (64 bit variation).
+		 * @param bytes Bytes to initialize the UUID with.
+		 */
 		explicit UUID(std::array<uint64_t, 2> const& data64) noexcept { std::memcpy(m_Bytes.data(), data64.data(), sizeof(m_Bytes)); }
 
+		/**
+		 * @brief Initialize a UUID with a string.
+		 * @param str String to initialize the UUID with.
+		 * @warning The string must be in the format "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" (36 characters including dashes), does assert for a valid format in Debug.
+		 */
 		explicit UUID(std::string_view const str) { *this = FromString(str); }
 
-#ifdef _WIN32
+	#ifdef _WIN32
+		/**
+		 * @brief Generate a new UUID.
+		 */
 		UUID() noexcept
 		{
 			GUID guid;
@@ -98,14 +117,17 @@ namespace MauUUID
 
 			std::memcpy(&m_Bytes[8], guid.Data4, 8);
 		}
-#endif
+	#endif
 
-#if defined(__linux__) || defined(__APPLE__)
+	#if defined(__linux__) || defined(__APPLE__)
+		/**
+		 * @brief Generate a new UUID.
+		 */
 		UUID() noexcept
 		{
 			uuid_generate(m_Bytes.data());
 		}
-#endif
+	#endif
 
 		~UUID() = default;
 		UUID(UUID const&) noexcept = default;
@@ -113,19 +135,34 @@ namespace MauUUID
 		UUID& operator=(UUID const&) noexcept = default;
 		UUID& operator=(UUID&&) noexcept = default;
 
+		/**
+		 * @brief Check if a UUID is null (all bytes are zero).
+		 * @return True if the UUID is null, false otherwise.
+		 */
 		[[nodiscard]] bool IsNull() const noexcept
 		{
 			static std::array<uint8_t, 16> constexpr zeroBytes{ 0 };
 			return m_Bytes == zeroBytes;
 		}
-
+		/**
+		 * @brief Get the raw byte data of the UUID.
+		 * @return Reference (const) to the internal byte array.
+		 */
 		[[nodiscard]] std::array<uint8_t, 16> const& Data() const noexcept { return m_Bytes; }
+		/**
+		 * @brief Get the raw byte data of the UUID (32).
+		 * @return Copy of the internal byte array in 32 bit format.
+		 */
 		[[nodiscard]] std::array<uint32_t, 4> Data32() const noexcept
 		{
 			std::array<uint32_t, 4> result{};
 			std::memcpy(result.data(), m_Bytes.data(), sizeof(m_Bytes));
 			return result;
 		}
+		/**
+		 * @brief Get the raw byte data of the UUID (64).
+		 * @return Copy of the internal byte array in 64 bit format.
+		 */
 		[[nodiscard]] std::array<uint64_t, 2> Data64() const noexcept
 		{
 			std::array<uint64_t, 2> result{};
@@ -134,6 +171,10 @@ namespace MauUUID
 		}
 
 #pragma region Strings
+		/**
+		 * @brief Get string representation of the UUID in the format "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+		 * @param buffer Buffer to write the string representation to, must be at least 37 characters long (36 for UUID + 1 for null terminator).
+		 */
 		void CStr(std::span<char, 37> buffer) const noexcept
 		{
 			static char constexpr hex[]{ "0123456789abcdef" };
@@ -178,14 +219,22 @@ namespace MauUUID
 			// null-terminate
 			*out = '\0';
 		}
-
+		/**
+		 * @brief Get string representation of the UUID in the format "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+		 * @return String representation of the UUID.
+		 */
 		[[nodiscard]] std::string Str() const noexcept
 		{
 			char buffer[37];
 			CStr(std::span{ buffer });
 			return { buffer };
 		}
-
+		/**
+		 * @brief Create a UUID from a string in the format "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+		 * @param str String to parse into a UUID.
+		 * @warning The string must be in the format "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" (36 characters including dashes), does assert for a valid format in Debug.
+		 * @return UUID object created from the string.
+		 */
 		[[nodiscard]] static UUID FromString(std::string_view const str) noexcept
 		{
 			assert(IsValidString(str) && "Invalid UUID format!");
@@ -200,7 +249,12 @@ namespace MauUUID
 
 			return uuid;
 		}
-
+		/**
+		 * @brief Create a UUID from a string in a lenient format, ignoring dashes, spaces, and curly braces.
+		 * @param str String to parse into a UUID.
+		 * @warning The string must contain exactly 32 hexadecimal characters, does assert for a valid format in Debug.
+		 * @return UUID object created from the string.
+		 */
 		[[nodiscard]] static UUID FromStringLenient(std::string_view const str) noexcept
 		{
 			assert(IsValidStringLenient(str));
@@ -224,7 +278,12 @@ namespace MauUUID
 
 			return uuid;
 		}
-
+		/**
+		 * @brief Try to create a UUID from a string in the format "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+		 * @param str String to parse into a UUID.
+		 * @param out Output parameter to store the created UUID if parsing is successful.
+		 * @return True if parsing was successful, false otherwise.
+		 */
 		[[nodiscard]] static bool TryParse(std::string_view const str, UUID& out) noexcept
 		{
 			if (!IsValidString(str))
@@ -234,7 +293,12 @@ namespace MauUUID
 			out = FromString(str);
 			return true;
 		}
-
+		/**
+		 * @brief Try to create a UUID from a string in a lenient format, ignoring dashes, spaces, and curly braces.
+		 * @param str String to parse into a UUID.
+		 * @param out Output parameter to store the created UUID if parsing is successful.
+		 * @return True if parsing was successful, false otherwise.
+		 */
 		[[nodiscard]] static bool TryParseLenient(std::string_view const str, UUID& out) noexcept
 		{
 			if (!IsValidStringLenient(str))
@@ -245,7 +309,11 @@ namespace MauUUID
 			out = FromStringLenient(str);
 			return true;
 		}
-
+		/**
+		 * @brief Check if a string is a valid UUID in the format "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+		 * @param str String to check.
+		 * @return True if the string is a valid UUID, false otherwise.
+		 */
 		[[nodiscard]] static bool IsValidString(std::string_view const str) noexcept
 		{
 			if (str.size() != 36 || str[8] != '-' || str[13] != '-' || str[18] != '-' || str[23] != '-') return false;
@@ -257,7 +325,11 @@ namespace MauUUID
 			}
 			return true;
 		}
-
+		/**
+		 * @brief Check if a string is a valid UUID in a lenient format, ignoring dashes, spaces, and curly braces.
+		 * @param str String to check.
+		 * @return True if the string is a valid UUID, false otherwise.
+		 */
 		[[nodiscard]] static bool IsValidStringLenient(std::string_view const str) noexcept
 		{
 			std::size_t count{ 0 };
@@ -311,6 +383,7 @@ namespace MauUUID
 
 #pragma endregion
 
+	// Chunk-based hash (in size_t chunks)
 	struct UUIDHashChunks final
 	{
 		size_t operator()(const UUID& uuid) const noexcept
@@ -336,6 +409,8 @@ namespace MauUUID
 			return result;
 		}
 	};
+
+	// Byte-by-byte hash
 	struct UUIDHashBytePerByte final
 	{
 		size_t operator()(const UUID& uuid) const noexcept
