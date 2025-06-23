@@ -1,4 +1,6 @@
 # UUID
+[![CI](https://github.com/MauroDeryckere/UUID/actions/workflows/ci.yml/badge.svg)](https://github.com/MauroDeryckere/UUID/actions/workflows/ci.yml)
+
 A small, lightweight UUID (Universally Unique Identifier) library for use in my C++ engine.
 
 This library provides functionality for generating and handling UUIDs in a simple and portable way. It is designed to be minimal, cross-platform, and easily integrable into any C++ project.
