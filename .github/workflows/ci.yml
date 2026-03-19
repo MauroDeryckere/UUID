@@ -1,50 +1,117 @@
 name: CI
 
+# Runs on PRs and pushes to main when source/build files change.
+# GitHub natively supports [skip ci] in commit messages to skip a run.
+
 on:
-  push:
-    branches: [ main, master ]
   pull_request:
-    branches: [ main, master ]
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  # Desktop: Release on all platforms, Debug on Linux only (catches asserts + debug iterators)
+  desktop:
+    name: ${{ matrix.os }} (${{ matrix.build_type }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        build_type: [Debug, Release]
-        compiler: [default, clang] # only meaningful on Ubuntu
-        exclude:
-          - os: windows-latest
-            compiler: clang
-          - os: macos-latest
-            compiler: clang # handled by AppleClang already
-    
-    runs-on: ${{ matrix.os }}
+        build_type: [Release]
+        include:
+          - os: ubuntu-latest
+            build_type: Debug
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-    - name: Install dependencies (Ubuntu only)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        sudo apt update
-        sudo apt install -y uuid-dev
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y uuid-dev
 
-    - name: Install Clang (Ubuntu only)
-      if: matrix.os == 'ubuntu-latest' && matrix.compiler == 'clang'
-      run: |
-        sudo apt install -y clang
+      - name: Cache FetchContent dependencies
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: ${{ matrix.os }}-deps-${{ hashFiles('tests/CMakeLists.txt') }}
 
-    - name: Configure
-      run: >
-        cmake -S . -B build
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        ${{ matrix.compiler == 'clang' && '-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++' || '' }}
+      - name: Configure
+        run: >
+          cmake -B build
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DMAU_UUID_BUILD_TESTS=ON
+          -DMAU_UUID_BUILD_EXAMPLE=ON
 
-    - name: Build
-      run: cmake --build build --config ${{ matrix.build_type }}
+      - name: Build
+        run: cmake --build build --config ${{ matrix.build_type }}
 
-    - name: Test
-      run: ctest --output-on-failure -C ${{ matrix.build_type }} -V
-      working-directory: build
+      - name: Test
+        run: ctest --test-dir build -C ${{ matrix.build_type }} --output-on-failure
+
+  # Android: cross-compile with NDK (no tests — no device)
+  android:
+    name: Android (${{ matrix.abi }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [arm64-v8a, armeabi-v7a, x86_64]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: >
+          cmake -B build
+          -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake
+          -DANDROID_ABI=${{ matrix.abi }}
+          -DANDROID_PLATFORM=android-24
+          -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build
+
+  # iOS: cross-compile with Xcode toolchain (no tests — no device)
+  ios:
+    name: iOS (${{ matrix.arch }})
+    runs-on: macos-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [arm64, x86_64]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: >
+          cmake -B build
+          -G Xcode
+          -DCMAKE_SYSTEM_NAME=iOS
+          -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }}
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0
+
+      - name: Build
+        run: cmake --build build --config Release
