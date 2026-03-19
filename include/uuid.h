@@ -2,10 +2,15 @@
 #define MAU_UUID_H
 
 #include <array>
-#include <cstring>
-#include <cstdint>
-#include <span>
+#include <cassert>
 #include <compare>
+#include <cstdint>
+#include <cstring>
+#include <istream>
+#include <ostream>
+#include <span>
+#include <string>
+#include <string_view>
 
 #ifdef _WIN32
 #define NOMINMAX

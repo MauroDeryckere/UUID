@@ -75,7 +75,7 @@ TEST_CASE("UUID hash has no collisions in large set", "[uuid][hash][collision]")
         std::unordered_set<MauUUID::UUID> uuidSet;
         uuidSet.reserve(NUM_UUIDS);
 
-        for (size_t i{ 0 }; i < NUM_UUIDS; ++i)
+        for (size_t j{ 0 }; j < NUM_UUIDS; ++j)
         {
             uuidSet.emplace();
         }
