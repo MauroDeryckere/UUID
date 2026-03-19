@@ -24,6 +24,8 @@ target_compile_options(MauUUIDTests PRIVATE
 	$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>
 )
 
-include(CTest)
-include(Catch)
-catch_discover_tests(MauUUIDTests)
+if(NOT CMAKE_CROSSCOMPILING)
+	include(CTest)
+	include(Catch)
+	catch_discover_tests(MauUUIDTests)
+endif()
