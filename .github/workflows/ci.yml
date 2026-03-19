@@ -43,14 +43,14 @@ jobs:
             build_type: Debug
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install dependencies (Ubuntu)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y uuid-dev
 
       - name: Cache FetchContent dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: build/_deps
           key: ${{ matrix.os }}-deps-${{ hashFiles('tests/CMakeLists.txt') }}
@@ -79,10 +79,10 @@ jobs:
         abi: [arm64-v8a, armeabi-v7a, x86_64]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Cache FetchContent dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: build/_deps
           key: android-${{ matrix.abi }}-deps-${{ hashFiles('tests/CMakeLists.txt') }}
@@ -111,10 +111,10 @@ jobs:
         arch: [arm64, x86_64]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Cache FetchContent dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: build/_deps
           key: ios-${{ matrix.arch }}-deps-${{ hashFiles('tests/CMakeLists.txt') }}
@@ -126,6 +126,7 @@ jobs:
           -DCMAKE_SYSTEM_NAME=iOS
           -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }}
           -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
           -DMAU_UUID_BUILD_EXAMPLE=ON
           -DMAU_UUID_BUILD_TESTS=ON
 
