@@ -24,6 +24,13 @@ target_compile_options(MauUUIDTests PRIVATE
 	$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Wpedantic -Werror>
 )
 
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	set_target_properties(MauUUIDTests PROPERTIES
+		MACOSX_BUNDLE TRUE
+		XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.mauuuid.tests"
+	)
+endif()
+
 if(NOT CMAKE_CROSSCOMPILING)
 	include(CTest)
 	include(Catch)

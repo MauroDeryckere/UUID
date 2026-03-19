@@ -19,3 +19,10 @@ target_compile_options(MauUUIDExample PRIVATE
 set_target_properties(MauUUIDExample PROPERTIES
 	VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
 )
+
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	set_target_properties(MauUUIDExample PROPERTIES
+		MACOSX_BUNDLE TRUE
+		XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.mauuuid.example"
+	)
+endif()
