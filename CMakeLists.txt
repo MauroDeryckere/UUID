@@ -6,8 +6,9 @@ project(MauUUID
 )
 
 # --- Options ---
-option(MAU_UUID_BUILD_EXAMPLE "Build the example application" OFF)
-option(MAU_UUID_BUILD_TESTS   "Build the test suite"          OFF)
+option(MAU_UUID_BUILD_EXAMPLE "Build the example application"                      OFF)
+option(MAU_UUID_BUILD_TESTS   "Build the test suite"                               OFF)
+option(MAU_UUID_USE_RANDOM    "Force portable std::random UUID generation"          OFF)
 
 # --- Library (header-only) ---
 add_library(MauUUID INTERFACE)
@@ -21,11 +22,18 @@ target_include_directories(MauUUID
 
 target_compile_features(MauUUID INTERFACE cxx_std_20)
 
+# --- Portable random fallback ---
+if(MAU_UUID_USE_RANDOM)
+	target_compile_definitions(MauUUID INTERFACE MAU_UUID_USE_RANDOM)
+endif()
+
 # --- Platform dependencies ---
-if(WIN32)
-	target_link_libraries(MauUUID INTERFACE ole32)
-elseif(UNIX AND NOT APPLE AND NOT ANDROID)
-	target_link_libraries(MauUUID INTERFACE uuid)
+if(NOT MAU_UUID_USE_RANDOM)
+	if(WIN32)
+		target_link_libraries(MauUUID INTERFACE ole32)
+	elseif(UNIX AND NOT APPLE AND NOT ANDROID)
+		target_link_libraries(MauUUID INTERFACE uuid)
+	endif()
 endif()
 
 # --- Example ---
