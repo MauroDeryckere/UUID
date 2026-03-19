@@ -13,20 +13,19 @@
 #include <string_view>
 
 #ifdef _WIN32
-#define NOMINMAX
-#include <objbase.h>
-#endif
-
-#ifdef __linux__
-#include <uuid/uuid.h>
-#endif
-
-#ifdef __APPLE__
-#include <uuid/uuid.h>
-#endif
-
-#if !defined(_WIN32) && !defined(__linux__) && !defined(__APPLE__)
-#error Unsupported platform
+	#define NOMINMAX
+	#include <objbase.h>
+#elif defined(__APPLE__)
+	#include <TargetConditionals.h>
+	#if TARGET_OS_IOS
+		#include <random>
+	#else
+		#include <uuid/uuid.h>
+	#endif
+#elif defined(__linux__) && !defined(__ANDROID__)
+	#include <uuid/uuid.h>
+#else
+	#include <random>
 #endif
 
 namespace MauUUID
@@ -122,15 +121,46 @@ namespace MauUUID
 
 			std::memcpy(&m_Bytes[8], guid.Data4, 8);
 		}
-	#endif
-
-	#if defined(__linux__) || defined(__APPLE__)
+	#elif defined(__APPLE__) && !TARGET_OS_IOS
 		/**
 		 * @brief Generate a new UUID.
 		 */
 		UUID() noexcept
 		{
 			uuid_generate(m_Bytes.data());
+		}
+	#elif defined(__linux__) && !defined(__ANDROID__)
+		/**
+		 * @brief Generate a new UUID.
+		 */
+		UUID() noexcept
+		{
+			uuid_generate(m_Bytes.data());
+		}
+	#else
+		/**
+		 * @brief Generate a new UUID (portable fallback using std::random).
+		 */
+		UUID() noexcept
+		{
+			static thread_local std::mt19937_64 rng{ []
+			{
+				std::random_device rd;
+				return (static_cast<uint64_t>(rd()) << 32) | rd();
+			}() };
+
+			std::uniform_int_distribution<uint64_t> dist;
+
+			uint64_t const a{ dist(rng) };
+			uint64_t const b{ dist(rng) };
+
+			std::memcpy(m_Bytes.data(), &a, 8);
+			std::memcpy(m_Bytes.data() + 8, &b, 8);
+
+			// RFC 4122 version 4 (random)
+			m_Bytes[6] = (m_Bytes[6] & 0x0F) | 0x40;
+			// RFC 4122 variant 1
+			m_Bytes[8] = (m_Bytes[8] & 0x3F) | 0x80;
 		}
 	#endif
 

@@ -68,11 +68,11 @@ jobs:
       - name: Test
         run: ctest --test-dir build -C ${{ matrix.build_type }} --output-on-failure
 
-  # Android: cross-compile with NDK (no tests — no device)
+  # Android: cross-compile with NDK (build only — no device to run tests)
   android:
     name: Android (${{ matrix.abi }})
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -80,6 +80,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Cache FetchContent dependencies
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: android-${{ matrix.abi }}-deps-${{ hashFiles('tests/CMakeLists.txt') }}
 
       - name: Configure
         run: >
@@ -89,15 +95,16 @@ jobs:
           -DANDROID_PLATFORM=android-24
           -DCMAKE_BUILD_TYPE=Release
           -DMAU_UUID_BUILD_EXAMPLE=ON
+          -DMAU_UUID_BUILD_TESTS=ON
 
       - name: Build
         run: cmake --build build
 
-  # iOS: cross-compile with Xcode toolchain (no tests — no device)
+  # iOS: cross-compile with Xcode toolchain (build only — no device to run tests)
   ios:
     name: iOS (${{ matrix.arch }})
     runs-on: macos-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -105,6 +112,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Cache FetchContent dependencies
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: ios-${{ matrix.arch }}-deps-${{ hashFiles('tests/CMakeLists.txt') }}
 
       - name: Configure
         run: >
@@ -114,6 +127,7 @@ jobs:
           -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }}
           -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0
           -DMAU_UUID_BUILD_EXAMPLE=ON
+          -DMAU_UUID_BUILD_TESTS=ON
 
       - name: Build
         run: cmake --build build --config Release

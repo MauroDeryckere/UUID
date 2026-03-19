@@ -24,9 +24,7 @@ target_compile_features(MauUUID INTERFACE cxx_std_20)
 # --- Platform dependencies ---
 if(WIN32)
 	target_link_libraries(MauUUID INTERFACE ole32)
-endif()
-
-if(UNIX AND NOT APPLE)
+elseif(UNIX AND NOT APPLE AND NOT ANDROID)
 	target_link_libraries(MauUUID INTERFACE uuid)
 endif()
 
